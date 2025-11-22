@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Sorteador de Comentários Instagram (CSV)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #020617;
+      --accent: #22c55e;
+      --accent-soft: rgba(34, 197, 94, 0.15);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --danger: #f87171;
+      --border: #1f2937;
+      --radius-xl: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1f2937 0, #020617 55%);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 900px;
+      background: radial-gradient(circle at top left, rgba(34, 197, 94, 0.12), transparent 55%) var(--card);
+      border-radius: 24px;
+      padding: 24px 24px 20px;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      box-shadow:
+        0 24px 80px rgba(0, 0, 0, 0.7),
+        0 0 0 1px rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(16px);
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .title-block h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .title-pill {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      border-radius: 999px;
+      padding: 3px 10px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--muted);
+    }
+
+    .title-block p {
+      margin: 4px 0 0;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(34, 197, 94, 0.08);
+      border: 1px solid rgba(34, 197, 94, 0.5);
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .badge span.icon {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.7);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 720px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: rgba(15, 23, 42, 0.92);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      padding: 16px 16px 14px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at top right, rgba(34, 197, 94, 0.08), transparent 60%);
+      opacity: 0.8;
+    }
+
+    .card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      font-size: 0.92rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title span.icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      font-size: 0.9rem;
+    }
+
+    .card-subtitle {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .dropzone {
+      border-radius: 16px;
+      border: 1px dashed rgba(148, 163, 184, 0.6);
+      padding: 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.18s ease-out;
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .dropzone:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.6);
+      transform: translateY(-1px);
+    }
+
+    .dropzone.dragover {
+      border-color: var(--accent);
+      background: rgba(22, 163, 74, 0.08);
+    }
+
+    .dropzone-title {
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+    }
+
+    .dropzone small {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .dropzone button {
+      margin-top: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: none;
+      background: rgba(34, 197, 94, 0.16);
+      color: var(--accent);
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      font-size: 0.75rem;
+    }
+
+    .stat-pill {
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    .stat-pill span.label {
+      color: var(--muted);
+    }
+
+    .stat-pill span.value {
+      color: var(--accent);
+      font-weight: 500;
+      margin-left: 4px;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 10px;
+    }
+
+    label {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    select {
+      width: 100%;
+      padding: 7px 8px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text);
+      font-size: 0.8rem;
+    }
+
+    .controls {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      accent-color: var(--accent);
+    }
+
+    .btn-primary {
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: none;
+      background: linear-gradient(135deg, #22c55e, #4ade80);
+      color: #022c22;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow:
+        0 0 18px rgba(34, 197, 94, 0.55),
+        0 10px 26px rgba(15, 23, 42, 0.9);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn-primary span.icon {
+      font-size: 1rem;
+    }
+
+    .winner-card {
+      margin-top: 6px;
+      padding: 12px;
+      border-radius: 16px;
+      background: radial-gradient(circle at top left, var(--accent-soft), rgba(15, 23, 42, 0.98));
+      border: 1px solid rgba(34, 197, 94, 0.5);
+      min-height: 90px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .winner-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+    }
+
+    .winner-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .winner-name span.avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: radial-gradient(circle at top left, #22c55e, #16a34a);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      color: #022c22;
+      box-shadow: 0 0 18px rgba(34, 197, 94, 0.7);
+    }
+
+    .winner-comment {
+      font-size: 0.8rem;
+      color: var(--text);
+      opacity: 0.95;
+      margin-top: 4px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .placeholder-text {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .log {
+      margin-top: 8px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      max-height: 116px;
+      overflow-y: auto;
+      border-radius: 10px;
+      padding: 8px 8px 6px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px dashed rgba(148, 163, 184, 0.3);
+    }
+
+    .log-entry {
+      margin-bottom: 4px;
+    }
+
+    .log-entry span.time {
+      color: var(--muted);
+      opacity: 0.7;
+    }
+
+    .log-entry span.text {
+      margin-left: 4px;
+    }
+
+    .log-entry.win {
+      color: var(--accent);
+    }
+
+    .error {
+      margin-top: 6px;
+      font-size: 0.78rem;
+      color: var(--danger);
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div class="title-block">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <h1>🎁 Sorteador de Comentários</h1>
+          <span class="title-pill">Instagram · CSV</span>
+        </div>
+        <p>Envie o CSV dos comentários, sorteie um vencedor e veja o usuário + comentário em texto.</p>
+      </div>
+      <div class="badge">
+        <span class="icon"></span>
+        100% local · sem servidor
+      </div>
+    </div>
+
+    <div class="layout">
+      <!-- Coluna esquerda: upload + config -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">
+              <span class="icon">📂</span>
+              Arquivo CSV dos comentários
+            </div>
+            <div class="card-subtitle">
+              Importe o arquivo exportado do Instagram ou de outra ferramenta.
+            </div>
+          </div>
+        </div>
+
+        <div id="dropzone" class="dropzone">
+          <div class="dropzone-title">Clique aqui ou arraste o CSV para esta área</div>
+          <small>Extensão recomendada: <strong>.csv</strong></small><br>
+          <button type="button">Selecionar arquivo</button>
+          <input id="fileInput" type="file" accept=".csv,text/csv" style="display:none;">
+        </div>
+
+        <div class="hint">
+          Dica: o CSV precisa ter pelo menos duas colunas: uma com o <strong>usuário/perfil</strong> e outra com o <strong>comentário</strong>.
+        </div>
+
+        <div id="stats" class="stats" style="display:none;">
+          <div class="stat-pill">
+            <span class="label">Linhas lidas:</span><span class="value" id="stat-rows">0</span>
+          </div>
+          <div class="stat-pill">
+            <span class="label">Participantes válidos:</span><span class="value" id="stat-valid">0</span>
+          </div>
+          <div class="stat-pill">
+            <span class="label">Delimitador:</span><span class="value" id="stat-delim">,</span>
+          </div>
+        </div>
+
+        <div id="config" style="display:none;">
+          <div class="field-group">
+            <label for="usernameColumn">Coluna do usuário / perfil (@)</label>
+            <select id="usernameColumn"></select>
+          </div>
+          <div class="field-group">
+            <label for="commentColumn">Coluna do comentário</label>
+            <select id="commentColumn"></select>
+          </div>
+
+          <div class="controls">
+            <div class="checkbox-row">
+              <input type="checkbox" id="ignoreHeader" checked>
+              <label for="ignoreHeader">Ignorar primeira linha como cabeçalho</label>
+            </div>
+          </div>
+        </div>
+
+        <div id="error" class="error" style="display:none;"></div>
+      </div>
+
+      <!-- Coluna direita: sorteio + resultado -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">
+              <span class="icon">🎲</span>
+              Sorteio
+            </div>
+            <div class="card-subtitle">
+              Clique para escolher um vencedor aleatório entre os participantes válidos.
+            </div>
+          </div>
+        </div>
+
+        <button id="drawButton" class="btn-primary" disabled>
+          <span class="icon">✨</span>
+          Sortear vencedor
+        </button>
+
+        <div id="winnerCard" class="winner-card">
+          <div class="winner-label">Resultado</div>
+          <div id="winnerContent">
+            <div class="placeholder-text">
+              Nenhum sorteio realizado ainda. Importe um CSV e clique em <strong>“Sortear vencedor”</strong>.
+            </div>
+          </div>
+        </div>
+
+        <div id="log" class="log">
+          <div class="log-entry">
+            <span class="time">[log]</span>
+            <span class="text">Aguardando arquivo CSV...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      Seus dados não saem do navegador. Ideal para lives e sorteios com transparência. 💚
+    </div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById("fileInput");
+    const dropzone = document.getElementById("dropzone");
+    const statsBox = document.getElementById("stats");
+    const statRows = document.getElementById("stat-rows");
+    const statValid = document.getElementById("stat-valid");
+    const statDelim = document.getElementById("stat-delim");
+    const configBox = document.getElementById("config");
+    const usernameSelect = document.getElementById("usernameColumn");
+    const commentSelect = document.getElementById("commentColumn");
+    const ignoreHeaderCheckbox = document.getElementById("ignoreHeader");
+    const drawButton = document.getElementById("drawButton");
+    const winnerContent = document.getElementById("winnerContent");
+    const errorBox = document.getElementById("error");
+    const logBox = document.getElementById("log");
+
+    let csvRows = [];
+    let header = [];
+    let delimiter = ",";
+    let lastWinner = null;
+
+    function log(message, type = "info") {
+      const div = document.createElement("div");
+      div.className = "log-entry" + (type === "win" ? " win" : "");
+      const timeSpan = document.createElement("span");
+      timeSpan.className = "time";
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, "0");
+      const mm = String(now.getMinutes()).padStart(2, "0");
+      const ss = String(now.getSeconds()).padStart(2, "0");
+      timeSpan.textContent = `[${hh}:${mm}:${ss}]`;
+      const textSpan = document.createElement("span");
+      textSpan.className = "text";
+      textSpan.textContent = " " + message;
+      div.appendChild(timeSpan);
+      div.appendChild(textSpan);
+      logBox.appendChild(div);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function setError(msg) {
+      if (!msg) {
+        errorBox.style.display = "none";
+        errorBox.textContent = "";
+        return;
+      }
+      errorBox.style.display = "block";
+      errorBox.textContent = msg;
+    }
+
+    function detectDelimiter(text) {
+      const firstLine = text.split(/\r?\n/)[0] || "";
+      const commaCount = (firstLine.match(/,/g) || []).length;
+      const semiCount = (firstLine.match(/;/g) || []).length;
+      if (semiCount > commaCount) return ";";
+      return ",";
+    }
+
+    // Parser CSV simples com suporte a aspas
+    function parseCSV(text, delim) {
+      const rows = [];
+      let current = "";
+      let row = [];
+      let insideQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+
+        if (char === '"') {
+          if (insideQuotes && text[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            insideQuotes = !insideQuotes;
+          }
+        } else if (char === "\r") {
+          continue;
+        } else if (char === "\n" && !insideQuotes) {
+          row.push(current);
+          rows.push(row);
+          current = "";
+          row = [];
+        } else if (char === delim && !insideQuotes) {
+          row.push(current);
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+
+      if (current.length > 0 || row.length > 0) {
+        row.push(current);
+        rows.push(row);
+      }
+
+      return rows;
+    }
+
+    function handleFileContent(text) {
+      try {
+        delimiter = detectDelimiter(text);
+        const rows = parseCSV(text, delimiter).filter(r => r.some(c => String(c).trim() !== ""));
+        if (!rows.length) {
+          setError("Não foi possível encontrar linhas válidas no arquivo.");
+          log("Arquivo processado, mas vazio ou inválido.", "info");
+          return;
+        }
+
+        header = rows[0].map(c => String(c).trim() || "(coluna vazia)");
+        csvRows = rows;
+        statDelim.textContent = delimiter;
+        setError("");
+
+        // Preenche selects
+        usernameSelect.innerHTML = "";
+        commentSelect.innerHTML = "";
+
+        header.forEach((col, index) => {
+          const optUser = document.createElement("option");
+          optUser.value = index;
+          optUser.textContent = `${index + 1} — ${col}`;
+          usernameSelect.appendChild(optUser);
+
+          const optComment = document.createElement("option");
+          optComment.value = index;
+          optComment.textContent = `${index + 1} — ${col}`;
+          commentSelect.appendChild(optComment);
+        });
+
+        // Tentativa automática de detectar colunas
+        const lowerHeader = header.map(h => h.toLowerCase());
+        let usernameGuess = 0;
+        let commentGuess = 1;
+
+        lowerHeader.forEach((h, idx) => {
+          if (h.includes("user") || h.includes("usuario") || h.includes("username") || h.includes("nome") || h.includes("autor") || h.includes("perfil")) {
+            usernameGuess = idx;
+          }
+          if (h.includes("comment") || h.includes("coment") || h.includes("texto") || h.includes("mensagem") || h.includes("caption")) {
+            commentGuess = idx;
+          }
+        });
+
+        usernameSelect.value = usernameGuess;
+        commentSelect.value = commentGuess;
+
+        updateStats();
+        configBox.style.display = "block";
+        statsBox.style.display = "flex";
+        drawButton.disabled = false;
+
+        log(`Arquivo importado com ${rows.length} linha(s).`);
+      } catch (err) {
+        console.error(err);
+        setError("Erro ao processar o arquivo CSV. Verifique o formato.");
+        log("Erro ao processar o arquivo CSV.", "info");
+      }
+    }
+
+    function updateStats() {
+      if (!csvRows.length) return;
+
+      const ignoreHeader = ignoreHeaderCheckbox.checked;
+      const startIndex = ignoreHeader ? 1 : 0;
+
+      const participants = csvRows.slice(startIndex);
+      const userColIndex = parseInt(usernameSelect.value, 10);
+
+      const validParticipants = participants.filter(row => {
+        const value = (row[userColIndex] || "").toString().trim();
+        return value.length > 0;
+      });
+
+      statRows.textContent = csvRows.length.toString();
+      statValid.textContent = validParticipants.length.toString();
+
+      if (!validParticipants.length) {
+        setError("Nenhum participante válido encontrado na coluna selecionada de usuário.");
+      } else {
+        setError("");
+      }
+    }
+
+    function normalizeUsername(raw) {
+      if (!raw) return "";
+      const trimmed = raw.toString().trim();
+      return trimmed; // aqui mantemos exatamente como veio (@leandro, etc.)
+    }
+
+    function drawWinner() {
+      if (!csvRows.length) {
+        setError("Nenhum arquivo carregado.");
+        return;
+      }
+
+      const ignoreHeader = ignoreHeaderCheckbox.checked;
+      const startIndex = ignoreHeader ? 1 : 0;
+      const userColIndex = parseInt(usernameSelect.value, 10);
+      const commentColIndex = parseInt(commentSelect.value, 10);
+
+      const participants = csvRows.slice(startIndex);
+      const validParticipants = participants.filter(row => {
+        const v = (row[userColIndex] || "").toString().trim();
+        return v.length > 0;
+      });
+
+      if (!validParticipants.length) {
+        setError("Nenhum participante válido encontrado para sorteio.");
+        return;
+      }
+
+      setError("");
+      const randomIndex = Math.floor(Math.random() * validParticipants.length);
+      const winnerRow = validParticipants[randomIndex];
+
+      const rawUsername = (winnerRow[userColIndex] || "").toString().trim();
+      const username = normalizeUsername(rawUsername);
+
+      const comment = (winnerRow[commentColIndex] || "").toString().trim();
+
+      lastWinner = { username, comment };
+
+      renderWinner(lastWinner);
+      log(`Vencedor sorteado: ${username}`, "win");
+    }
+
+    function renderWinner(winner) {
+      winnerContent.innerHTML = "";
+
+      if (!winner) {
+        const placeholder = document.createElement("div");
+        placeholder.className = "placeholder-text";
+        placeholder.innerHTML = 'Nenhum sorteio realizado ainda. Importe um CSV e clique em <strong>“Sortear vencedor”</strong>.';
+        winnerContent.appendChild(placeholder);
+        return;
+      }
+
+      const initial = winner.username
+        ? winner.username.trim()[0]?.toUpperCase() || "@"
+        : "@";
+
+      const nameRow = document.createElement("div");
+      nameRow.className = "winner-name";
+
+      const avatar = document.createElement("span");
+      avatar.className = "avatar";
+      avatar.textContent = initial;
+
+      const nameText = document.createElement("span");
+      nameText.textContent = winner.username;
+
+      nameRow.appendChild(avatar);
+      nameRow.appendChild(nameText);
+
+      const commentRow = document.createElement("div");
+      commentRow.className = "winner-comment";
+      commentRow.textContent = `Comentário: ${winner.comment || "—"}`;
+
+      winnerContent.appendChild(nameRow);
+      winnerContent.appendChild(commentRow);
+    }
+
+    // Eventos de upload
+    dropzone.addEventListener("click", () => fileInput.click());
+    dropzone.querySelector("button").addEventListener("click", () => fileInput.click());
+
+    dropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropzone.classList.add("dragover");
+    });
+
+    dropzone.addEventListener("dragleave", () => {
+      dropzone.classList.remove("dragover");
+    });
+
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("dragover");
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        readFile(file);
+      }
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        readFile(file);
+      }
+    });
+
+    function readFile(file) {
+      if (!file.name.toLowerCase().endsWith(".csv")) {
+        setError("Envie um arquivo com extensão .csv");
+        log("Arquivo rejeitado (não é CSV).");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        handleFileContent(e.target.result);
+      };
+      reader.onerror = () => {
+        setError("Erro ao ler o arquivo. Tente novamente.");
+        log("Erro ao ler arquivo.", "info");
+      };
+      reader.readAsText(file, "utf-8");
+      log(`Lendo arquivo: ${file.name}`);
+    }
+
+    // Eventos de configuração
+    usernameSelect.addEventListener("change", () => {
+      updateStats();
+    });
+
+    commentSelect.addEventListener("change", () => {
+      updateStats();
+    });
+
+    ignoreHeaderCheckbox.addEventListener("change", () => {
+      updateStats();
+    });
+
+    drawButton.addEventListener("click", () => {
+      drawWinner();
+    });
+
+    // Estado inicial
+    renderWinner(null);
+  </script>
+</body>
+</html>
+
